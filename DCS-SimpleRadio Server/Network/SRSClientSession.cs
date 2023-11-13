@@ -33,8 +33,10 @@ namespace Ciribob.DCS.SimpleRadio.Standalone.Server.Network
 
         protected override void OnConnected()
         {
+            LogClient("Client connected");
+            
             var clientIp = (IPEndPoint)Socket.RemoteEndPoint;
-
+            
             if (_bannedIps.Contains(clientIp.Address))
             {
                 Logger.Warn("Disconnecting Banned Client -  " + clientIp.Address + " " + clientIp.Port);
@@ -45,6 +47,8 @@ namespace Ciribob.DCS.SimpleRadio.Standalone.Server.Network
 
         protected override void OnSent(long sent, long pending)
         {
+            LogClient("Client sent");
+            
             // Disconnect slow client with 50MB send buffer
             if (pending > 5e+7)
             {
@@ -55,6 +59,8 @@ namespace Ciribob.DCS.SimpleRadio.Standalone.Server.Network
 
         protected override void OnDisconnected()
         {
+            LogClient("Client disconnected");
+            
             _receiveBuffer.Clear();
             ((ServerSync)Server).HandleDisconnect(this);
         }
@@ -94,6 +100,8 @@ namespace Ciribob.DCS.SimpleRadio.Standalone.Server.Network
 
         protected override void OnReceived(byte[] buffer, long offset, long size)
         {
+            LogClient("Client received");
+            
             _receiveBuffer.Append(Encoding.UTF8.GetString(buffer, (int)offset, (int)size));
 
             foreach (var s in GetNetworkMessage())
@@ -113,5 +121,10 @@ namespace Ciribob.DCS.SimpleRadio.Standalone.Server.Network
             Logger.Error($"Caught Socket Error: {error}");
         }
 
+        private void LogClient(string operation)
+        {
+            var clientIp = (IPEndPoint)Socket.RemoteEndPoint;
+            Logger.Info($"{operation}: IP {clientIp.Address} | Port {clientIp.Port}");
+        }
     }
 }
